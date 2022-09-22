@@ -71,7 +71,7 @@ slpks = [f for f in os.listdir(home) if os.path.splitext(f)[1].lower() == u".slp
 #             else:
 #                 return zip.read(f.replace("\\", "/"))  # Direct read
 
-def read(f, slpk):
+def read(f, slpk, force_unzip=False):
     """read gz compressed file from slpk (=zip archive) and output result"""
     if f.startswith("\\"):  # remove first \
         f = f[1:]
@@ -79,7 +79,8 @@ def read(f, slpk):
     t1 = datetime.datetime.now()
     with open(os.path.join(home, slpk), 'rb') as file:
         with zipfile.ZipFile(file) as zip:
-            if os.path.splitext(f)[1] == ".gz":  # unzip GZ
+            if os.path.splitext(f)[1] == ".gz" or force_unzip:  # unzip GZ
+                print "reading %s as gzip file" % f
                 bytes = zip.read(f.replace("\\", "/"))
                 gz = BytesIO(bytes)  # GZ file  -> convert path sep to zip path sep
                 with gzip.GzipFile(fileobj=gz) as gzfile:
@@ -213,7 +214,13 @@ def Ctextures_info(slpk, layer, node):
     try:
         return read("nodes/%s/textures/0_0_1.bin.dds.gz" % node, slpk)
     except:
-        return ""
+        try:
+            return read("nodes/%s/textures/0_0_1.bin.dds" % node, slpk)
+        except:
+            try:
+                return read("nodes/%s/textures/0_0_1.bin" % node, slpk, force_unzip=True)
+            except:
+                return ""
 
 
 @app.route('/arcgis/rest/services/<slpk>/SceneServer/layers/<layer>/nodes/<node>/features/0')
